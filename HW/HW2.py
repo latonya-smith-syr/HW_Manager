@@ -8,7 +8,7 @@ st.title("📄 Document Summarizer")
 st.write(
     "Upload a document below and ask a question about it – GPT will answer! ")
 
-secret_key = st.secrets.OPEN_API_KEY
+secret_key = st.secrets.OPENAI_SECRET_KEY
 
 # Ask user for their OpenAI API key via `st.text_input`.
 # Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
@@ -24,7 +24,7 @@ def read_url_content(url):
     try:
         response = requests.get(url)
         response.raise_for_status()
-        soup = BeautifulSoup(response.content, 'html.paser')
+        soup = BeautifulSoup(response.content, 'html.parser')
         return soup.get_text()
     except requests.RequestException as e:
         print(f"Error reading {url}: {e}")
@@ -53,25 +53,39 @@ summary_option = add_selectbox = st.sidebar.selectbox(
     )
 )
 
+llm_option = st.sidebar.selectbox(
+    'LLMs', (
+        'Chat-GPT',
+        'Claude'
+    )
+)
 #st.write(summary_option, "Summarization Options")
 
 #mini is advanced and nano is less advanced
 advanced_model = st.checkbox('Advanced Model')
+
+language_options = st.selectbox(
+    'Choose a language', ('English', 'Spanish', 'Russian', 'Jamaican Patois')
+)
 
 if advanced_model:
     model_type = "gpt-5-mini"
 else:
     model_type = "gpt-5-nano"
 
-if uploaded_file:
+if attached_url:
 
         # Process the uploaded file and question.
-    document = uploaded_file.read().decode()
+    document = read_url_content(attached_url)
     messages = [
         {
             "role":"system",
             "content": f"Use this instruction of for the document: {summary_option} \n\n---\n\n"
 
+        },
+        {
+            "role":"system",
+            "content": f"Display the summarization in this language: {language_options} \n\n---\n\n"
         },
         {
                 "role": "user",
