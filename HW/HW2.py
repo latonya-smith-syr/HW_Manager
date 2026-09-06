@@ -1,5 +1,7 @@
 import streamlit as st
 from openai import OpenAI
+import requests
+from bs4 import BeautifulSoup
 
 # Show title and description.
 st.title("📄 Document Summarizer")
@@ -17,9 +19,20 @@ secret_key = st.secrets.OPEN_API_KEY
     # Create an OpenAI client.
 client = OpenAI(api_key=secret_key)
 
+
+def read_url_content(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'html.paser')
+        return soup.get_text()
+    except requests.RequestException as e:
+        print(f"Error reading {url}: {e}")
+        return None
+    
     # Let the user upload a file via `st.file_uploader`.
-uploaded_file = st.file_uploader(
-    "Upload a document (.txt or .md)", type=("txt", "md")
+attached_url = st.text_input(
+    "Please enter a URL", type=("url")
     )
 
     # Ask the user for a question via `st.text_area`.
