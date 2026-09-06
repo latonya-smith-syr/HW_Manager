@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 # Show title and description.
 st.title("📄 Website Summarizer")
 st.write(
-    "Upload a document below and ask a question about it – GPT will answer! ")
+    "Enter a URL for me to summarize! ")
 
 secret_key = st.secrets.OPENAI_SECRET_KEY
 
@@ -29,7 +29,9 @@ def read_url_content(url):
     except requests.RequestException as e:
         print(f"Error reading {url}: {e}")
         return None
-    
+
+
+
     # Let the user upload a file via `st.file_uploader`.
 attached_url = st.text_input(
     "Please enter a URL", type=("url")
@@ -73,7 +75,7 @@ if advanced_model:
 else:
     model_type = "gpt-5-nano"
 
-if attached_url:
+if attached_url and llm_option:
 
         # Process the uploaded file and question.
     document = read_url_content(attached_url)
