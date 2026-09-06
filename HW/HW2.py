@@ -4,7 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 
 # Show title and description.
-st.title("📄 Document Summarizer")
+st.title("📄 Website Summarizer")
 st.write(
     "Upload a document below and ask a question about it – GPT will answer! ")
 
