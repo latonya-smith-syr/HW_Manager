@@ -48,7 +48,7 @@ attached_url = st.text_input(
 
 st.sidebar.title('Choose a Summarization Method')
 
-summary_option = add_selectbox = st.sidebar.selectbox(
+summary_option = st.sidebar.selectbox(
     'Options', (
         'Summarize the document in 100 words',
         'Summarize the document in 2 connecting paragraphs',
@@ -78,9 +78,9 @@ if llm_option == 'Chat-GPT':
         model_type = "gpt-5-nano"
 else:
     if advanced_model:
-        model_type = "claude-opus-4-20250514"
+        model_type = "claude-opus-5"
     else:
-        model_type = "claude-sonnet-4-20250514"
+        model_type = "claude-sonnet-5"
 
 def do_chat(attached_url):
     client = OpenAI(api_key=secret_key_openai)
@@ -129,7 +129,6 @@ def do_anthropic(attached_url):
     message = client.messages.create(
         model = model_type,
         max_tokens=1500,
-        temperature=0,
         system= f"Use this instruction for the document: {summary_option} and Display the summarization in this language: {language_options} \n\n---\n\n",
         messages=message_to_LLM
     )
