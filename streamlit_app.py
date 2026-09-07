@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="Lab Landing Page",
+    page_title="Homework Landing Page",
     layout="wide",
     initial_sidebar_state= 'expanded'
 

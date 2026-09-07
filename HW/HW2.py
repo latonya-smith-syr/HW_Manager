@@ -71,11 +71,16 @@ language_options = st.selectbox(
     'Choose a language', ('English', 'Spanish', 'Russian', 'Jamaican Patois')
 )
 
-if advanced_model:
-    model_type = "gpt-5-mini"
+if llm_option == 'Chat-GPT':
+    if advanced_model:
+        model_type = "gpt-5-mini"
+    else:
+        model_type = "gpt-5-nano"
 else:
-    model_type = "gpt-5-nano"
-
+    if advanced_model:
+        model_type = "claude-opus-4-20250514"
+    else:
+        model_type = "claude-sonnet-4-20250514"
 
 def do_chat(attached_url):
     client = OpenAI(api_key=secret_key_openai)
@@ -110,30 +115,32 @@ def do_chat(attached_url):
         # Generate an answer using the OpenAI API.
 
         # Stream the response to the app using `st.write_stream`.
-def do_anthropic(attached_url):
-    if model_to_use == 'sonnet':
-        model = 'claude-sonnet-4-20250514'
-    else:
-        model = 'claude-opus-4-20250514'
 
-    client = anthropic.Anthropic(secret_key_anthro)
+def do_anthropic(attached_url):
+
+    client = anthropic.Anthropic(api_key = secret_key_anthro)
     document = read_url_content(attached_url)
-    message_to_LLM = {
-        {'role':'system', 'content':[{'type':'text', 'text': f"Use this instruction of for the document: {summary_option} \n\n---\n\n"}]},
-        {'role':'system', 'content':[{'type':'text', 'text': f"Display the summarization in this language: {language_options} \n\n---\n\n"}]},
+
+    
+    message_to_LLM = [
         {'role': 'user', 'content': [{'type':'text', 'text': f"Here's a document: {document} \n\n---\n\n"}]}
-        
-    }
+    ]
 
     message = client.messages.create(
-        model = model_to_use,
+        model = model_type,
         max_tokens=1500,
         temperature=0,
-        system=system_message,
+        system= f"Use this instruction for the document: {summary_option} and Display the summarization in this language: {language_options} \n\n---\n\n",
         messages=message_to_LLM
     )
 
-    data = message.cntent[0].text
-    return data
+    data = message.content[0].text
+    return st.write(data)
+
+
+if llm_option == 'Chat-GPT' and attached_url:
+    do_chat(attached_url)
+elif llm_option == 'Claude' and attached_url:
+    do_anthropic(attached_url)
 
 
