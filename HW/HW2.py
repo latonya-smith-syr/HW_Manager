@@ -87,6 +87,19 @@ def do_chat(attached_url):
 
         # Process the uploaded file and question.
     document = read_url_content(attached_url)
+
+    try:
+        client.models.list()
+    except Exception as e:
+        st.info(
+            "This OpenAI key is no longer valid. "
+        "Please contact the owner of this website."
+        )
+        st.stop()
+
+           # Process the uploaded file and question.
+        document = read_url_content(attached_url)
+        
     messages = [
          {
                      "role":"system",
@@ -119,9 +132,21 @@ def do_chat(attached_url):
 def do_anthropic(attached_url):
 
     client = anthropic.Anthropic(api_key = secret_key_anthro)
-    document = read_url_content(attached_url)
 
-    
+    try:
+        client.messages.create(
+        model = model_type,
+        max_tokens=1,
+        messages=[{"role": "user", "content": "Are you working?"}]
+    )
+    except Exception as e:
+        st.info(
+        "This Claude key is not valid. "
+        "Please contact the owner of this website."
+    )
+        st.stop()
+
+    document = read_url_content(attached_url)
     message_to_LLM = [
         {'role': 'user', 'content': [{'type':'text', 'text': f"Here's a document: {document} \n\n---\n\n"}]}
     ]
@@ -133,7 +158,8 @@ def do_anthropic(attached_url):
         messages=message_to_LLM
     )
 
-    data = message.content[0].text
+#PLEASE_NOTE: I used AI for this piece of text
+    data = next(block.text for block in message.content if block.type == "text")
     return st.write(data)
 
 
