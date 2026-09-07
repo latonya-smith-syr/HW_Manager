@@ -2,13 +2,15 @@ import streamlit as st
 from openai import OpenAI
 import requests
 from bs4 import BeautifulSoup
+import anthropic
 
 # Show title and description.
 st.title("📄 Website Summarizer")
 st.write(
     "Enter a URL for me to summarize! ")
 
-secret_key = st.secrets.OPENAI_SECRET_KEY
+secret_key_openai = st.secrets.OPENAI_SECRET_KEY
+secret_key_anthro = st.secrets.ANTHROPIC_API_KEY
 
 # Ask user for their OpenAI API key via `st.text_input`.
 # Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
@@ -17,7 +19,6 @@ secret_key = st.secrets.OPENAI_SECRET_KEY
 
 
     # Create an OpenAI client.
-client = OpenAI(api_key=secret_key)
 
 
 def read_url_content(url):
@@ -75,32 +76,64 @@ if advanced_model:
 else:
     model_type = "gpt-5-nano"
 
-if attached_url and llm_option:
+
+def do_chat(attached_url):
+    client = OpenAI(api_key=secret_key_openai)
 
         # Process the uploaded file and question.
     document = read_url_content(attached_url)
     messages = [
-        {
-            "role":"system",
-            "content": f"Use this instruction of for the document: {summary_option} \n\n---\n\n"
+         {
+                     "role":"system",
+                     "content": f"Use this instruction of for the document: {summary_option} \n\n---\n\n"
+         
+                 },
+                 {
+                     "role":"system",
+                     "content": f"Display the summarization in this language: {language_options} \n\n---\n\n"
+                 },
+                 {
+                         "role": "user",
+                         "content": f"Here's a document: {document} \n\n---\n\n",
+                 }
+         
 
-        },
-        {
-            "role":"system",
-            "content": f"Display the summarization in this language: {language_options} \n\n---\n\n"
-        },
-        {
-                "role": "user",
-                "content": f"Here's a document: {document} \n\n---\n\n",
-        }
     ]
-
-        # Generate an answer using the OpenAI API.
     stream = client.chat.completions.create(
         model= model_type,
         messages=messages,
         stream=True,
-    )
+        )
+    st.write_stream(stream)
+    return 
+
+        # Generate an answer using the OpenAI API.
 
         # Stream the response to the app using `st.write_stream`.
-    st.write_stream(stream)
+def do_anthropic(attached_url):
+    if model_to_use == 'sonnet':
+        model = 'claude-sonnet-4-20250514'
+    else:
+        model = 'claude-opus-4-20250514'
+
+    client = anthropic.Anthropic(secret_key_anthro)
+    document = read_url_content(attached_url)
+    message_to_LLM = {
+        {'role':'system', 'content':[{'type':'text', 'text': f"Use this instruction of for the document: {summary_option} \n\n---\n\n"}]},
+        {'role':'system', 'content':[{'type':'text', 'text': f"Display the summarization in this language: {language_options} \n\n---\n\n"}]},
+        {'role': 'user', 'content': [{'type':'text', 'text': f"Here's a document: {document} \n\n---\n\n"}]}
+        
+    }
+
+    message = client.messages.create(
+        model = model_to_use,
+        max_tokens=1500,
+        temperature=0,
+        system=system_message,
+        messages=message_to_LLM
+    )
+
+    data = message.cntent[0].text
+    return data
+
+
