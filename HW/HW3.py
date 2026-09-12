@@ -18,7 +18,7 @@ def read_url_content(url):
         print(f"Error reading {url}: {e}")
         return None
 
-model = "gpt-4o-mini"
+#model = "gpt-4o-mini"
 
 
 if 'client' not in st.session_state:
@@ -32,10 +32,53 @@ for msg in st.session_state.messages:
     chat_msg = st.chat_message(msg["role"])
     chat_msg.write(msg["content"])
 
-buffer_type = st.sidebar.selectbox('Buffer type', ('Last 2 responses', 'Token-based'))
+llm_option = st.sidebar.selectbox(
+    'LLMs', (
+        'Chat-GPT',
+        'Claude'
+    )
+)
 
-system_prompt = {"role": "system", "content":  "Explain all answers simply enough for a 10-year-old to understand.After the user's first response ask them this:Do you want more information?. "
-            "If they say yes, give them more information and then ask them specifically: Do you want more information?. If they say no, ask them specifically How can I help you?"}
+if llm_option == 'Chat-GPT':
+    model = "gpt-6-astra"
+else:
+    model = "claude-fable-5-1"
+
+
+if st.checkbox('Add URLs'):
+    url_number = st.selectbox('How many URLS?',
+                          ('1', '2')) 
+    attached_url = []
+    if url_number == '1':
+        attached_url.append(st.text_input('Please enter a URL', type=("url")))
+    elif url_number == '2':
+        url1 = st.text_input('URL 1', type =("url"))
+        url2 = st.text_input('URL 2', type=("url"))
+        attached_url.append(url1)
+        attached_url.append(url2)
+else:
+    attached_url= []
+
+def read_urls(urls):
+    url_text = ""
+    if urls == None:
+        return url_text
+    else:
+        for url in urls:
+            if read_url_content(url) == None:
+                url_text += ""
+            else:
+                url_text += read_url_content(url)
+        return url_text
+
+
+
+system_prompt = {"role": "system", "content": "Explain all answers simply enough for a 10-year-old to understand.After the user's first response ask them this:Do you want more information?. "
+            "If they say yes, give them more information and then ask them specifically: Do you want more information?. If they say no, ask them specifically How can I help you?"+ read_urls(attached_url)}
+
+max_tokens = 2000
+
+buffer_type = st.sidebar.selectbox('Buffer type', ('Last 2 responses', 'Token-based'))
 
 def count_tokens(text, model="gpt-4o-mini"):
     encoding = tiktoken.encoding_for_model(model)
@@ -43,8 +86,6 @@ def count_tokens(text, model="gpt-4o-mini"):
 
 def msg_buffer(messages, system_prompt):
     return [system_prompt] + messages[-4:]
-
-max_tokens = 1000
 
 #Note to Grader:  I used AI to strategize how to calculate the tokens and for the coding logic 
 # on looking at the last messages
@@ -62,15 +103,7 @@ def token_buffer(messages, system_prompt, max_tokens, model=model):
     return [system_prompt] + kept   
 
 
-if st.checkbox('Add URLs'):
-    url_number = st.selectbox('How many URLS?',
-                          ('1', '2')) 
-    if url_number == '1':
-        attached_url = st.text_input('Please enter a URL', type=("url"))
-    elif url_number == '2':
-        url1 = st.text_input('URL 1', type =("url"))
-        url2 = st.text_input('URL 2', type=("url"))
-        attached_url = [url1, url2]
+
 
 if prompt := st.chat_input("What is up?"):   
 
