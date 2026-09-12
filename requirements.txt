@@ -3,3 +3,4 @@ openai
 pypdf
 bs4
 anthropic
+tiktoken

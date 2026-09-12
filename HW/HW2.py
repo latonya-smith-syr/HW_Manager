@@ -167,5 +167,3 @@ if llm_option == 'Chat-GPT' and attached_url:
     do_chat(attached_url)
 elif llm_option == 'Claude' and attached_url:
     do_anthropic(attached_url)
-
-
