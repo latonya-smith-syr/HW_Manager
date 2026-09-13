@@ -8,7 +8,9 @@ from bs4 import BeautifulSoup
 st.title("My Lab 3 question answering chatbot")
 
 st.write("Chatbot Demo")
-
+st.write(" This chatbot functions as a normal chatbot. However there are some limitations.\n" \
+"You have the option of inputting up to two URLs (only at the start of the chat) and the chat will forget the conversation after approximately 2000 tokens. \n"
+)
 
 def read_url_content(url):
     try:
@@ -73,6 +75,8 @@ def read_urls(urls):
         return url_text
     else:
         for url in urls:
+            if not url:
+                continue
             if read_url_content(url) == None:
                 url_text += ""
             else:
