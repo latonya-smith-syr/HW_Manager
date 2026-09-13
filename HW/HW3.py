@@ -55,20 +55,23 @@ for msg in st.session_state.messages:
 
 
 
-if st.sidebar.checkbox('Add URLs'):
-    url_number = st.selectbox('How many URLS?',
-                          ('1', '2')) 
-    attached_url = []
-    if url_number == '1':
-        attached_url.append(st.text_input('Please enter a URL', type=("url")))
-    elif url_number == '2':
-        url1 = st.text_input('URL 1', type =("url"))
-        url2 = st.text_input('URL 2', type=("url"))
-        attached_url.append(url1)
-        attached_url.append(url2)
+if len(st.session_state.messages) <= 1:
+    if st.sidebar.checkbox('Add URLs'):
+        url_number = st.selectbox('How many URLS?',
+                              ('1', '2')) 
+        attached_url = []
+        if url_number == '1':
+            attached_url.append(st.text_input('Please enter a URL', type=("url")))
+        elif url_number == '2':
+            url1 = st.text_input('URL 1', type =("url"))
+            url2 = st.text_input('URL 2', type=("url"))
+            attached_url.append(url1)
+            attached_url.append(url2)
+    else:
+        attached_url= []
 else:
-    attached_url= []
-
+    attached_url = st.session_state.get("attached_url", [])
+    
 def read_urls(urls):
     url_text = ""
     if urls == None:
