@@ -69,9 +69,10 @@ if len(st.session_state.messages) <= 1:
             attached_url.append(url2)
     else:
         attached_url= []
+    st.session_state["attached_url"] = attached_url
 else:
     attached_url = st.session_state.get("attached_url", [])
-    
+
 def read_urls(urls):
     url_text = ""
     if urls == None:
@@ -80,12 +81,12 @@ def read_urls(urls):
         for url in urls:
             if not url:
                 continue
-            if read_url_content(url) == None:
+            content = read_url_content(url)
+            if content is None:
                 url_text += ""
             else:
-                url_text += read_url_content(url)
+                url_text += content[:4000] 
         return url_text
-
 
 
 system_prompt = {"role": "system", "content": "Explain all answers simply enough for a 10-year-old to understand.After the user asks you to do something ask them this:Do you want more information?. "
@@ -170,5 +171,3 @@ if prompt := st.chat_input("What is up?"):
 
         st.session_state.messages.append({"role": "assistant", "content": data})
         st.write(data)
-        
-        
