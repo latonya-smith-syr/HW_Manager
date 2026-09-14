@@ -5,7 +5,7 @@ import requests
 import anthropic
 from bs4 import BeautifulSoup
 
-st.title("My Lab 3 question answering chatbot")
+st.title("My Chatbot Demo")
 
 st.write("Chatbot Demo")
 st.write(" This chatbot functions as a normal chatbot. However there are some limitations.\n" \
