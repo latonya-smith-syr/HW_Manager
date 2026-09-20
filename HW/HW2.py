@@ -38,14 +38,6 @@ attached_url = st.text_input(
     "Please enter a URL", type=("url")
     )
 
-    # Ask the user for a question via `st.text_area`.
-#question = st.text_area(
-#    "Now ask a question about the document!",
-#    placeholder="Can you give me a short summary?",
-#    disabled=not uploaded_file,
-#)
-
-
 st.sidebar.title('Choose a Summarization Method')
 
 summary_option = st.sidebar.selectbox(

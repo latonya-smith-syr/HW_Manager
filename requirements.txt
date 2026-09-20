@@ -4,3 +4,6 @@ pypdf
 bs4
 anthropic
 tiktoken
+chromadb
+pysqlite3-binary
+PyPDF2
