@@ -100,7 +100,6 @@ for msg in st.session_state.messages:
     chat_msg = st.chat_message(msg["role"])
     chat_msg.write(msg["content"])
 
-buffer_type = st.sidebar.selectbox('Buffer type', ('Last 2 responses', 'Token-based'))
 
 base_system_prompt = ("Be a helpful assistant. Answer using the retrieved course material "
     "Use it when it is relevant and say: Based on the course "
