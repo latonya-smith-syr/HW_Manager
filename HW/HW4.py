@@ -53,21 +53,20 @@ def chunk_text_into_two(text):
 def add_chunks_to_collection(collection, chunk_1, chunk_2, file_name):
     #Creating an embedding from pdf
     client = st.session_state.client
-    for i, chunk in enumerate([chunk_1, chunk_2], start=1)
-    response = client.embeddings.create(
-        input= chunk,
-        model= 'text-embedding-3-small'
+    for i, chunk in enumerate([chunk_1, chunk_2], start=1):
+        response = client.embeddings.create(
+            input= chunk,
+            model= 'text-embedding-3-small'
     )
-    #Get the embedding
-    embedding = response.data[0].embedding
+        embedding = response.data[0].embedding
 
     #Add embedding and document to ChromaDB
-    collection.add(
-        documents=[chunk],
-        ids=[f"{file_name}_chunk{i}"],
-        metadatas=[{"filename": file_name, "chunk": i}],
-        embeddings= [embedding]
-    )
+        collection.add(
+            documents=[chunk],
+            ids=[f"{file_name}_chunk{i}"],
+            metadatas=[{"filename": file_name, "chunk": i}],
+            embeddings= [embedding]
+        )                    
     return collection
 
 def load_htmls_to_collection(folder_path, collection):
@@ -103,36 +102,14 @@ for msg in st.session_state.messages:
 
 buffer_type = st.sidebar.selectbox('Buffer type', ('Last 2 responses', 'Token-based'))
 
-base_system_prompt = ("Explain all answers simply enough for a 10-year-old to understand.After the user's first response ask them this:Do you want more information?. "
-            "If they say yes, give them more information and then ask them specifically: Do you want more information?. If they say no, ask them specifically How can I help you?")
+base_system_prompt = ("Be a helpful assistant. Answer using the retrieved course material "
+    "Use it when it is relevant and say: Based on the course "
+    "If it isn't relevant, answer from general knowledge and say you are not using the course materials.")
 
 
-
-
-
-def count_tokens(text, model="gpt-4o-mini"):
-    encoding = tiktoken.encoding_for_model(model)
-    return len(encoding.encode(text))
 
 def msg_buffer(messages, system_prompt):
-    return [system_prompt] + messages[-4:]
-
-max_tokens = 5000
-
-#Note to Grader:  I used AI to strategize how to calculate the tokens and for the coding logic 
-# on looking at the last messages
-def token_buffer(messages, system_prompt, max_tokens, model=model):
-    system_tokens = count_tokens(system_prompt["content"], model)
-    budget = max_tokens - system_tokens
-    kept = []
-    total = 0
-    for msg in reversed(messages):
-        t = count_tokens(msg["content"], model)
-        if total + t > budget:
-            break
-        kept.insert(0, msg)
-        total += t
-    return [system_prompt] + kept   
+    return [system_prompt] + messages[-10:]
 
 if prompt := st.chat_input("What is up?"):    
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -140,7 +117,7 @@ if prompt := st.chat_input("What is up?"):
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # --- RAG retrieval: fetch relevant course material for this question ---
+    
     client = st.session_state.client
     query_response = client.embeddings.create(
         input=prompt,
@@ -162,16 +139,10 @@ if prompt := st.chat_input("What is up?"):
     system_prompt = {
         "role": "system",
         "content": base_system_prompt
-        + "\n\nYou have the following course material retrieved for this question. "
-          "If you use it in your answer, clearly say so (e.g., 'Based on the course materials...'). "
-          "If it isn't relevant, answer from general knowledge and say you are not using the course materials.\n\n"
+        + "\n\netrieved course material:\n\n"
         + context_text
     }
-
-    if buffer_type == "Last 2 responses":
-        api_msg = msg_buffer(st.session_state.messages, system_prompt)
-    else:
-        api_msg = token_buffer(st.session_state.messages, system_prompt, max_tokens, model)
+    api_msg = msg_buffer(st.session_state.messages, system_prompt)
 
     stream = client.chat.completions.create(
         model= model,
