@@ -9,18 +9,25 @@ import tiktoken
 import chromadb
 from pathlib import Path
 from PyPDF2 import PdfReader
+from bs4 import BeautifulSoup
 
 
 if 'client' not in st.session_state:
-    api_key = st.secrets["OPEN_API_KEY"]
+    api_key = st.secrets["OPENAI_SECRET_KEY"]
     st.session_state.client= OpenAI(api_key=api_key)
 
-def extract_text_from_pdf(pdf_path):
-    reader = PdfReader(pdf_path)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text()
+def extract_text_from_html(html_path):
+    with open(html_path, "r", encoding="utf-8", errors="ignore") as f:
+        soup = BeautifulSoup(f.read(), "html.parser")
+
+    for tag in soup(["script", "style", "nav", "header", "footer"]):
+        tag.decompose()
+
+    text = soup.get_text(separator=" ")
+    text = " ".join(text.split())
     return text
+
+def chunk_text_into_two(text):
     
 
 def add_to_collection(collection, text, file_name):
