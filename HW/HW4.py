@@ -28,13 +28,34 @@ def extract_text_from_html(html_path):
     return text
 
 def chunk_text_into_two(text):
+    midpoint = len(text) //2
+
+    window = 200
+    start = max(0, midpoint - window)
+    end = min(len(text), midpoint + window)
+    section = text[start:end]
+    best_point = None
+    split_here = midpoint
+
+    for i, ch in enumerate(section):
+        if ch == "." and i + 1 < len(section) and section[i + 1] == " ":
+            candidate = section + i + 1
+            offset = abs(candidate - midpoint)
+            if best_point is None or offset < best_point:
+                best_point = offset
+                split_here = candidate
+    chunk_1 = text[:split_here].strip()
+    chunk_2 = text[:split_here].strip()
+    return chunk_1, chunk_2
+
     
 
-def add_to_collection(collection, text, file_name):
+def add_chunks_to_collection(collection, chunk_1, chunk_2, file_name):
     #Creating an embedding from pdf
     client = st.session_state.client
+    for i, chunk in enumerate([chunk_1, chunk_2], start=1)
     response = client.embeddings.create(
-        input= text,
+        input= chunk,
         model= 'text-embedding-3-small'
     )
     #Get the embedding
@@ -42,57 +63,33 @@ def add_to_collection(collection, text, file_name):
 
     #Add embedding and document to ChromaDB
     collection.add(
-        documents=[text],
-        ids=[file_name],
-        metadatas=[{"filename": file_name}],
+        documents=[chunk],
+        ids=[f"{file_name}_chunk{i}"],
+        metadatas=[{"filename": file_name, "chunk": i}],
         embeddings= [embedding]
     )
     return collection
 
-def load_pdfs_to_collection(folder_path, collection):
+def load_htmls_to_collection(folder_path, collection):
     if collection.count() == 0:
-        pdf_dir = Path(folder_path)
-        for pdf_file in pdf_dir.glob("*.pdf"):
-            text = extract_text_from_pdf(pdf_file)
-            add_to_collection(collection, text, pdf_file.name)
+        html_dir = Path(folder_path)
+        for html_file in html_dir.glob("*.html"):
+            text = extract_text_from_html(html_file)
+            chunk_1, chunk_2= chunk_text_into_two(text)
+            add_chunks_to_collection(collection, chunk_1, chunk_2, html_file.name)
 
-def create_lab4_vectordb():
+def create_hw4_vectordb():
     chroma_client = chromadb.PersistentClient(path='./ChromaDB_for_Lab4')
     collection = chroma_client.get_or_create_collection('Lab4Collection')
-    load_pdfs_to_collection('./PDF_files_lab4', collection)
+    load_htmls_to_collection('./html_files_hw4', collection)
     return collection
 
-if 'Lab4_VectorDB' not in st.session_state:
-    st.session_state.Lab4_VectorDB = create_lab4_vectordb()
+if 'HW4_VectorDB' not in st.session_state:
+    st.session_state.Lab4_VectorDB = create_hw4_vectordb()
 
 collection = st.session_state.Lab4_VectorDB
-
-st.title("Lab 4 RAG chatbot")
+st.title("HW4 RAG chatbot")
 st.write("Chatbot Demo")
-
-#topic = st.sidebar.text_input('Topic', placeholder='Type your topic (e.g., GenAI)...')
-
-#Sif topic:
-#    client = st.session_state.client
-#    response = client.embeddings.create(
-#        input = topic,
-#        model= 'text-embedding-3-small'
-#    )
-#    query_embedding = response.data[0].embedding
-#
-#    results = collection.query(
-#        query_embeddings=[query_embedding],
-#        n_results=3 #The number of closest documents to return
-#    )
-#    #Display the results
-#    st.subheader(f"Results for: {topic}")
-#    for i in range(len(results['documents'][0])):
-#        doc = results['documents'][0][i]
-#        doc_id = results['ids'][0][i]
-#
-#        st.write(f'**{i+1}. {doc_id}**')
-#else:
-#    st.info('Enter a topic in the sidebar to search the collection')
 
     
 model = "gpt-4o-mini"
