@@ -86,7 +86,7 @@ def create_hw4_vectordb():
 if 'HW4_VectorDB' not in st.session_state:
     st.session_state.HW4_VectorDB = create_hw4_vectordb()
 
-collection = st.session_state.Lab4_VectorDB
+collection = st.session_state.HW4_VectorDB
 st.title("HW4 RAG chatbot")
 st.write("Chatbot Demo")
 
