@@ -39,13 +39,13 @@ def chunk_text_into_two(text):
 
     for i, ch in enumerate(section):
         if ch == "." and i + 1 < len(section) and section[i + 1] == " ":
-            candidate = section + i + 1
+            candidate = start + i + 1
             offset = abs(candidate - midpoint)
             if best_point is None or offset < best_point:
                 best_point = offset
                 split_here = candidate
     chunk_1 = text[:split_here].strip()
-    chunk_2 = text[:split_here].strip()
+    chunk_2 = text[split_here:].strip()
     return chunk_1, chunk_2
 
     
@@ -78,13 +78,13 @@ def load_htmls_to_collection(folder_path, collection):
             add_chunks_to_collection(collection, chunk_1, chunk_2, html_file.name)
 
 def create_hw4_vectordb():
-    chroma_client = chromadb.PersistentClient(path='./ChromaDB_for_Lab4')
-    collection = chroma_client.get_or_create_collection('Lab4Collection')
+    chroma_client = chromadb.PersistentClient(path='./ChromaDB_for_HW4')
+    collection = chroma_client.get_or_create_collection('HW4Collection')
     load_htmls_to_collection('./html_files_hw4', collection)
     return collection
 
 if 'HW4_VectorDB' not in st.session_state:
-    st.session_state.Lab4_VectorDB = create_hw4_vectordb()
+    st.session_state.HW4_VectorDB = create_hw4_vectordb()
 
 collection = st.session_state.Lab4_VectorDB
 st.title("HW4 RAG chatbot")
