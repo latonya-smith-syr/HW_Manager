@@ -10,8 +10,9 @@ st.set_page_config(
 HW1 = st.Page('HW/HW1.py', title="Homework 1")
 HW2 = st.Page('HW/HW2.py', title = "Homework 2")
 HW3 = st.Page('HW/HW3.py', title= "Homework 3")
-HW4 = st.Page('HW/HW4.py', title="Homework 4", default=True)
+HW4 = st.Page('HW/HW4.py', title="Homework 4")
+HW5 = st.Page('HW/HW5.py', title="Homework 5", default=True)
 
-pg = st.navigation([HW1, HW2, HW3, HW4])
+pg = st.navigation([HW1, HW2, HW3, HW4, HW5])
 st.set_page_config(page_title='Homework Manager')
 pg.run()
