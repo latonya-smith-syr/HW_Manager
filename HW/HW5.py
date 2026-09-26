@@ -106,9 +106,64 @@ base_system_prompt = ("Be a helpful assistant. Answer using the retrieved course
     "If it isn't relevant, answer from general knowledge and say you are not using the course materials.")
 
 
-
 def msg_buffer(messages, system_prompt):
     return [system_prompt] + messages[-10:]
+
+
+
+def relevant_course_info(query):
+    query_response = client.embeddings.create(
+            input=query,
+            model='text-embedding-3-small'
+        )
+    rag_results = collection.query(
+            query_embeddings=[query_embedding],
+            n_results=3
+        )
+    query_embedding = query_response.data[0].embedding
+    
+    retrieved_docs = rag_results['documents'][0]
+    retrieved_ids = rag_results['ids'][0]
+    
+    context_text = "\n\n".join(
+            f"[Source: {doc_id}]\n{doc_text[:1500]}" for doc_id, doc_text in zip(retrieved_ids, retrieved_docs)
+        )
+    
+    system_prompt = {
+            "role": "system",
+            "content": base_system_prompt
+            + "\n\netrieved course material:\n\n"
+            + context_text
+    }
+    
+    api_msg = msg_buffer(st.session_state.messages, system_prompt)
+    stream = client.chat.completions.create(
+            model= model,
+            messages = api_msg,
+            stream=True
+        )
+    
+    return stream
+
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "relevant_course_info",
+            "description": "Get the inserted query answered using the chromaDB",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "stream": {
+                        "type": "string",
+                        "description": "The answer to the inputted query where the LLM uses chromaDB to answer",
+                    },
+                },
+                "required": ["stream"],
+            },
+        },
+    }
+]
 
 if prompt := st.chat_input("What is up?"):    
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -118,30 +173,6 @@ if prompt := st.chat_input("What is up?"):
 
     
     client = st.session_state.client
-    query_response = client.embeddings.create(
-        input=prompt,
-        model='text-embedding-3-small'
-    )
-    query_embedding = query_response.data[0].embedding
-
-    rag_results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=3
-    )
-    retrieved_docs = rag_results['documents'][0]
-    retrieved_ids = rag_results['ids'][0]
-
-    context_text = "\n\n".join(
-        f"[Source: {doc_id}]\n{doc_text[:1500]}" for doc_id, doc_text in zip(retrieved_ids, retrieved_docs)
-    )
-
-    system_prompt = {
-        "role": "system",
-        "content": base_system_prompt
-        + "\n\netrieved course material:\n\n"
-        + context_text
-    }
-    api_msg = msg_buffer(st.session_state.messages, system_prompt)
 
     stream = client.chat.completions.create(
         model= model,
