@@ -1,11 +1,11 @@
 import sys
 
-
 __import__('pysqlite3')
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import streamlit as st
 from openai import OpenAI
 import tiktoken
+import json
 import chromadb
 from pathlib import Path
 from PyPDF2 import PdfReader
@@ -87,11 +87,53 @@ if 'HW4_VectorDB' not in st.session_state:
     st.session_state.HW4_VectorDB = create_hw4_vectordb()
 
 collection = st.session_state.HW4_VectorDB
-st.title("HW4 RAG chatbot")
+
+
+def msg_buffer(system_prompt, messages):
+    return [{"role": "system", "content": system_prompt}] + messages[-10:]
+
+def relevant_course_info(query):
+    query_response = client.embeddings.create(
+            input=query,
+            model='text-embedding-3-small'
+        )
+    query_embedding = query_response.data[0].embedding
+    rag_results = collection.query(
+                query_embeddings=[query_embedding],
+                n_results=3
+            )
+    return {
+        'ids': rag_results['ids'][0],
+        'documents': rag_results['documents'][0]
+    }
+
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "relevant_course_info",
+            "description": "Get the 3 documents most similar to the query",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Asks a question that can be answered by the documents,"
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    }
+]
+
+st.title("HW5 chatbot")
 st.write("Chatbot Demo")
 
     
 model = "gpt-4o-mini"
+
+client = st.session_state.client
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
@@ -106,80 +148,59 @@ base_system_prompt = ("Be a helpful assistant. Answer using the retrieved course
     "If it isn't relevant, answer from general knowledge and say you are not using the course materials.")
 
 
-def msg_buffer(messages, system_prompt):
-    return [system_prompt] + messages[-10:]
+if prompt := st.chat_input("What is up?"):  
 
-
-
-def relevant_course_info(query):
-    query_response = client.embeddings.create(
-            input=query,
-            model='text-embedding-3-small'
-        )
-    rag_results = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=3
-        )
-    query_embedding = query_response.data[0].embedding
-    
-    retrieved_docs = rag_results['documents'][0]
-    retrieved_ids = rag_results['ids'][0]
-    
-    context_text = "\n\n".join(
-            f"[Source: {doc_id}]\n{doc_text[:1500]}" for doc_id, doc_text in zip(retrieved_ids, retrieved_docs)
-        )
-    
-    system_prompt = {
-            "role": "system",
-            "content": base_system_prompt
-            + "\n\netrieved course material:\n\n"
-            + context_text
-    }
-    
-    api_msg = msg_buffer(st.session_state.messages, system_prompt)
-    stream = client.chat.completions.create(
-            model= model,
-            messages = api_msg,
-            stream=True
-        )
-    
-    return stream
-
-tools = [
-    {
-        "type": "function",
-        "function": {
-            "name": "relevant_course_info",
-            "description": "Get the inserted query answered using the chromaDB",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "stream": {
-                        "type": "string",
-                        "description": "The answer to the inputted query where the LLM uses chromaDB to answer",
-                    },
-                },
-                "required": ["stream"],
-            },
-        },
-    }
-]
-
-if prompt := st.chat_input("What is up?"):    
     st.session_state.messages.append({"role": "user", "content": prompt})
-    
+    messages = st.session_state.messages
+
     with st.chat_message("user"):
-        st.markdown(prompt)
+            st.markdown(prompt)
 
-    
-    client = st.session_state.client
+    api_msg = msg_buffer(base_system_prompt, messages)
 
-    stream = client.chat.completions.create(
-        model= model,
-        messages = api_msg,
-        stream=True
+    response = client.chat.completions.create(
+        model=model,
+        messages=api_msg,
+        tools=tools,
+        tool_choice="auto"
     )
 
-    with st.chat_message("assistant"):
-        response = st.write_stream(stream)
-    st.session_state.messages.append({"role": "assistant", "content": response})
+    response_message = response.choices[0].message
+    messages.append(response_message.to_dict())
+
+    tool_calls = response_message.tool_calls
+
+    if tool_calls:
+        tool_call_id = tool_calls[0].id
+        tool_function_name = tool_calls[0].function.name
+        tool_query = json.loads(tool_calls[0].function.arguments).get('query')
+
+        if tool_function_name == "relevant_course_info":
+            try:
+                sim_course_result = relevant_course_info(tool_query)
+            except Exception as e:
+                sim_course_result = {"error": str(e)}
+
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call_id,
+                "name": tool_function_name,
+                "content": json.dumps(sim_course_result)
+            })
+
+            final_response = client.chat.completions.create(
+                model=model,
+                messages=msg_buffer(base_system_prompt, messages)
+            )
+            final_content = final_response.choices[0].message.content
+            st.write(final_content)
+            st.session_state.messages.append({"role": "assistant", "content": final_content})
+        else:
+            st.write(f"Error: function {tool_function_name} is not recognized")
+    else:
+        st.write(response_message.content)
+        st.session_state.messages.append({"role": "assistant", "content": response_message.content})
+
+    #with st.chat_message("assistant"):
+     #   response = st.write_stream(stream)
+    #
