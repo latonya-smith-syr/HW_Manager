@@ -1,3 +1,6 @@
+import sys
+__import__('pysqlite3')
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import pandas as pd
 import chromadb
 import streamlit as st
@@ -5,7 +8,7 @@ from openai import OpenAI
  
 client = OpenAI(api_key=st.secrets["OPENAI_SECRET_KEY"])
  
-df = pd.read_csv("news.csv").dropna(subset=["Document"])
+df = pd.read_csv("hw7_files/news.csv").dropna(subset=["Document"])
  
 chroma_client = chromadb.PersistentClient(path="./ChromaDB_for_HW7")
 collection = chroma_client.get_or_create_collection("HW7Collection")
@@ -23,4 +26,4 @@ if collection.count() == 0:
                        for r in df.itertuples()]
         )
  
-print("Articles in DB:", collection.count())
+st.write("Articles in DB:", collection.count())
