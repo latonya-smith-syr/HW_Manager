@@ -66,8 +66,10 @@ def msg_buffer(messages):
  
  
 st.title("HW7 News Bot")
-model = st.sidebar.selectbox("Model", ["gpt-4o-mini", "gpt-4o"])
- 
+model = st.sidebar.selectbox("Model", ["gpt-4o-mini", "gpt-6.1-sol"])
+extra = {} if model == "gpt-4o-mini" else {"reasoning_effort": "none"}
+
+
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "Ask me about the news."}]
  
@@ -81,7 +83,11 @@ if prompt := st.chat_input("Find the most interesting news"):
     messages = list(st.session_state.messages)
  
     response = client.chat.completions.create(
-        model=model, messages=msg_buffer(messages), tools=tools, tool_choice="auto"
+        model=model, 
+        messages=msg_buffer(messages), 
+        tools=tools, 
+        tool_choice="auto",
+        **extra
     )
     response_message = response.choices[0].message
  
