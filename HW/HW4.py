@@ -111,6 +111,7 @@ def msg_buffer(messages, system_prompt):
     return [system_prompt] + messages[-10:]
 
 if prompt := st.chat_input("What is up?"):    
+    
     st.session_state.messages.append({"role": "user", "content": prompt})
     
     with st.chat_message("user"):
